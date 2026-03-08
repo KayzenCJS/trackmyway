@@ -14,30 +14,34 @@ const Login = () => {
         setSuccess('');
 
         try {
+            console.log('Enviando datos:', { email, password }); // Para depurar
+
             const response = await fetch('http://localhost/trackmyway-api/login.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ 
+                    email: email, 
+                    password: password 
+                })
             });
 
             const data = await response.json();
+            console.log('Respuesta del servidor:', data); // Para depurar
 
             if (data.success) {
                 setSuccess('¡Login exitoso! Redirigiendo...');
-                // Guardar datos del usuario (opcional)
                 localStorage.setItem('user', JSON.stringify(data.user));
-                // Redirigir al inicio después de 1 segundo
                 setTimeout(() => {
                     window.location.href = '/';
                 }, 1000);
             } else {
-                setError(data.message);
+                setError(data.message || 'Error al iniciar sesión');
             }
         } catch (err) {
+            console.error('Error completo:', err);
             setError('Error de conexión con el servidor');
-            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -57,22 +61,24 @@ const Login = () => {
 
                             {error && (
                                 <div className="alert alert-danger" role="alert">
+                                    <i className="bi bi-exclamation-triangle me-2"></i>
                                     {error}
                                 </div>
                             )}
 
                             {success && (
                                 <div className="alert alert-success" role="alert">
+                                    <i className="bi bi-check-circle me-2"></i>
                                     {success}
                                 </div>
                             )}
 
                             <form onSubmit={handleSubmit}>
                                 <div className="mb-3">
-                                    <label className="form-label">Email</label>
+                                    <label className="form-label fw-medium">Email</label>
                                     <input
                                         type="email"
-                                        className="form-control form-control-lg"
+                                        className="form-control form-control-lg bg-light border-0"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="ejemplo@correo.com"
@@ -81,10 +87,10 @@ const Login = () => {
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="form-label">Contraseña</label>
+                                    <label className="form-label fw-medium">Contraseña</label>
                                     <input
                                         type="password"
-                                        className="form-control form-control-lg"
+                                        className="form-control form-control-lg bg-light border-0"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="••••••••"
@@ -94,13 +100,14 @@ const Login = () => {
 
                                 <button
                                     type="submit"
-                                    className="btn w-100 py-2 mb-3"
+                                    className="btn w-100 py-3 mb-3"
                                     style={{
                                         backgroundColor: '#0a2540',
                                         color: 'white',
                                         borderRadius: '30px',
                                         fontWeight: '500',
-                                        fontSize: '1.1rem'
+                                        fontSize: '1.1rem',
+                                        border: 'none'
                                     }}
                                     disabled={loading}
                                 >
@@ -127,5 +134,7 @@ const Login = () => {
         </div>
     );
 };
+
+
 
 export default Login;

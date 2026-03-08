@@ -72,3 +72,7 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 =======
 # TrackmyWay
 >>>>>>> f538ac6d7ce14ce0a36d1a6b1a2c4a52d8db8654
+
+
+-Falta arreglar la imagne de sobre nosotros
+-Mejorar empresa. Mejroar servicio y innovar. 
