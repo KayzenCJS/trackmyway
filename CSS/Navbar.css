@@ -1,0 +1,126 @@
+ /* Estilo general del navbar */
+  .navbar {
+    padding: 12px 0;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(245, 245, 245, 0.1);
+  }
+  
+  /* Espaciado y tipografía */
+  .navbar-nav .nav-link {
+    font-weight: 500;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+    padding: 8px 16px !important;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+  
+  /* Efecto hover minimalista */
+  .navbar-nav .nav-link:hover {
+    background-color: rgba(245, 245, 245, 0.1) !important;
+    color: #f5f5f5 !important;
+  }
+  
+  /* Estilo para el active */
+  .navbar-nav .nav-link.active {
+    background-color: rgba(245, 245, 245, 0.15) !important;
+    font-weight: 600;
+  }
+  
+  /* Dropdowns estilo Apple */
+  .dropdown-menu {
+    padding: 8px 0;
+    border-radius: 12px;
+    background-color: #0a2540;
+    border: none;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    min-width: 220px;
+  }
+  
+  .dropdown-item {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+  }
+  
+  .dropdown-item:hover {
+    background-color: rgba(245, 245, 245, 0.1) !important;
+    color: #f5f5f5 !important;
+  }
+  
+  .dropdown-item i {
+    width: 20px;
+    text-align: center;
+  }
+  
+  /* Flecha del dropdown */
+  .dropdown-toggle::after {
+    border: none;
+    content: "›";
+    font-size: 1.2rem;
+    vertical-align: middle;
+    margin-left: 6px;
+    transform: rotate(90deg);
+    display: inline-block;
+    transition: transform 0.2s ease;
+  }
+  
+  .dropdown-toggle[aria-expanded="true"]::after {
+    transform: rotate(-90deg);
+  }
+  
+  /* Ajustes para móvil */
+  @media (max-width: 991px) {
+    .navbar-nav {
+      gap: 5px !important;
+      margin-top: 15px;
+    }
+    
+    .navbar-nav .nav-link {
+      padding: 10px 16px !important;
+    }
+    
+    .dropdown-menu {
+      background-color: rgba(10, 37, 64, 0.95) !important;
+      margin-left: 15px;
+      margin-right: 15px;
+    }
+    
+    .navbar-brand {
+      font-size: 1.3rem;
+    }
+  }
+  
+  /* Logo/brand */
+  .navbar-brand {
+    font-weight: 600;
+    font-size: 1.2rem;
+    letter-spacing: -0.5px;
+  }
+  
+  /* Botón toggle personalizado */
+  .navbar-toggler {
+    border: none;
+    padding: 8px;
+    border-radius: 8px;
+  }
+  
+  .navbar-toggler:focus {
+    box-shadow: none;
+    outline: none;
+  }
+  
+  .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28245, 245, 245, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+  }
+  
+  /* Contenedor principal para mejor espaciado */
+  .container {
+    max-width: 1400px;
+  }
+  
+  /* Espaciado entre items */
+  .gap-2 {
+    gap: 0.5rem !important;
+  }
