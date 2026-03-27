@@ -1,10 +1,16 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import Login from './Pages/Login';
 import 'leaflet/dist/leaflet.css';
 import './App.css';
+import { useUser } from './context/UserContext';
+import Info from './Pages/Info';
+
+// OSRM Route Components
+import OSRMRoute from './components/OSRMRoute';
+import RoutePlanner from './components/RoutePlanner';
 
 // Coordenadas de Santo Domingo
 const santoDomingoCenter = [18.4861, -69.9312];
@@ -46,15 +52,73 @@ L.Icon.Default.mergeOptions({
 });
 
 function App() {
+  const { user, isGuest, logout, isLoggedIn } = useUser();
+
+  // Botón de instalación de PWA
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallButton, setShowInstallButton] = useState(false);
+
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallButton(true);
+    });
+  }, []);
+
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('App instalada');
+        }
+        setDeferredPrompt(null);
+        setShowInstallButton(false);
+      });
+    }
+  };
+
+  // ESTADOS PARA RUTAS OSRM  
+  const [routePoints, setRoutePoints] = useState({
+    start: null,
+    end: null,
+    profile: 'driving'
+  });
+
+  const [routeInfo, setRouteInfo] = useState(null);
+
+  const handleRouteRequest = (points) => {
+    setRoutePoints({
+      start: points.start,
+      end: points.end,
+      profile: points.profile
+    });
+  };
+
+  const handleRouteFound = (routes) => {
+    setRouteInfo(routes);
+    console.log('Rutas encontradas:', routes);
+  };
+
+  // Función para scroll suave a las secciones
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
+        <Route path="/info" element={<Info />} />
         <Route path="/" element={
           <div className="App">
-            {/* NAVBAR */}
+            {/* ===== NAVBAR PRINCIPAL ===== */}
             <nav className="navbar navbar-expand-lg navbar-dark" style={{ backgroundColor: '#0a2540' }}>
               <div className="container">
-                <a className="navbar-brand" href="/">
+                <a className="navbar-brand" href="#/">
                   <i className="bi bi-signpost-split me-2"></i>TrackMyWay
                 </a>
                 <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -62,27 +126,61 @@ function App() {
                 </button>
                 <div className="collapse navbar-collapse" id="navbarNav">
                   <ul className="navbar-nav mx-auto">
-                    <li className="nav-item"><a className="nav-link active" href="/">Inicio</a></li>
-                    <li className="nav-item"><a className="nav-link" href="#servicios">Servicios</a></li>
-                    <li className="nav-item"><a className="nav-link" href="#mapa">Mapa</a></li>
-                    <li className="nav-item"><a className="nav-link" href="#nosotros">Nosotros</a></li>
-                    <li className="nav-item"><a className="nav-link" href="#contacto">Contacto</a></li>
+                    <li className="nav-item">
+                      <button className="nav-link active" style={{ background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => scrollToSection('inicio')}>
+                        Inicio
+                      </button>
+                    </li>
+                    <li className="nav-item">
+                      <button className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => scrollToSection('servicios')}>
+                        Servicios
+                      </button>
+                    </li>
+                    <li className="nav-item">
+                      <button className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => scrollToSection('mapa')}>
+                        Mapa
+                      </button>
+                    </li>
+                    <li className="nav-item">
+                      <button className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => scrollToSection('nosotros')}>
+                        Nosotros
+                      </button>
+                    </li>
+                    <li className="nav-item">
+                      <button className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => scrollToSection('contacto')}>
+                        Contacto
+                      </button>
+                    </li>
                   </ul>
                   
-                  {/* Mi cuenta - Link a Login */}
+                  {/* Mi cuenta */}
                   <ul className="navbar-nav">
-                    <li className="nav-item">
-                      <a className="nav-link" href="/login">
-                        <i className="bi bi-person-circle me-1"></i>Iniciar sesión
-                      </a>
-                    </li>
+                    {isLoggedIn() ? (
+                      <li className="nav-item dropdown">
+                        <a className="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                          <i className="bi bi-person-circle me-1"></i>{user?.nombre || 'Usuario'}
+                        </a>
+                        <ul className="dropdown-menu dropdown-menu-end" style={{ backgroundColor: '#0a2540' }}>
+                          <li><a className="dropdown-item text-white" href="#">Mi perfil</a></li>
+                          <li><a className="dropdown-item text-white" href="#">Mis rutas</a></li>
+                          <li><hr className="dropdown-divider" /></li>
+                          <li><a className="dropdown-item text-white" href="#" onClick={logout}>Cerrar sesión</a></li>
+                        </ul>
+                      </li>
+                    ) : (
+                      <li className="nav-item">
+                        <a className="nav-link" href="#/login">
+                          <i className="bi bi-person-circle me-1"></i>{isGuest ? 'Visitante 👤' : 'Iniciar sesión'}
+                        </a>
+                      </li>
+                    )}
                   </ul>
                 </div>
               </div>
             </nav>
 
             {/* HERO SECTION */}
-            <section className="hero-section py-5" style={{ backgroundColor: '#f8f9fa' }}>
+            <section id="inicio" className="hero-section py-5" style={{ backgroundColor: '#f8f9fa' }}>
               <div className="container">
                 <div className="row align-items-center">
                   <div className="col-lg-6">
@@ -93,14 +191,22 @@ function App() {
                       La forma más inteligente de moverte por Santo Domingo. 
                       Rutas optimizadas, tráfico en tiempo real y ahorro garantizado.
                     </p>
-                    <div className="d-flex gap-3 mt-4">
-                      <button className="btn btn-lg" style={{ backgroundColor: '#0a2540', color: 'white', borderRadius: '30px', padding: '12px 30px' }}>
-                        <i className="bi bi-play-circle me-2"></i>Comenzar
-                      </button>
-                      <button className="btn btn-lg" style={{ backgroundColor: 'white', color: '#0a2540', border: '2px solid #0a2540', borderRadius: '30px', padding: '12px 30px' }}>
-                        <i className="bi bi-info-circle me-2"></i>Más info
-                      </button>
-                    </div>
+                  <div className="d-flex gap-3 mt-4">
+  <button 
+    className="btn btn-lg" 
+    style={{ backgroundColor: '#0a2540', color: 'white', borderRadius: '30px', padding: '12px 30px' }}
+    onClick={() => window.location.href = '#/login'}
+  >
+    <i className="bi bi-play-circle me-2"></i>Comenzar
+  </button>
+  <button 
+    className="btn btn-lg" 
+    style={{ backgroundColor: 'white', color: '#0a2540', border: '2px solid #0a2540', borderRadius: '30px', padding: '12px 30px' }}
+    onClick={() => window.location.href = '#/info'}
+  >
+    <i className="bi bi-info-circle me-2"></i>Más info
+  </button>
+</div>
                   </div>
                   <div className="col-lg-6">
                     <img src="https://imgs.search.brave.com/ybRdnkYsWPtXtKi0CcQiKYg5-a9K_iAweAOx8h7aHl0/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy8x/LzFlL0Rpc3RyaXRv/X05hY2lvbmFsX2lu/X0RvbWluaWNhbl9S/ZXB1YmxpY18oc3Bl/Y2lhbF9tYXJrZXIp/LnN2Zw" alt="Hero" className="img-fluid rounded-4 shadow"/>
@@ -152,54 +258,33 @@ function App() {
                 </div>
               </div>
 
-              {/* PANEL DE DIRECCIONES */}
-              <div className="row mb-4">
-                <div className="col-12">
-                  <div className="p-3" style={{ 
-                    backgroundColor: 'white',
-                    borderRadius: '50px',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-                    border: '1px solid #e0e0e0'
-                  }}>
-                    <div className="d-flex flex-column flex-md-row align-items-md-center gap-3">
-                      <div className="d-flex align-items-center flex-grow-1">
-                        <span style={{ color: '#0a2540', fontWeight: '600', minWidth: '60px' }}>Lines</span>
-                        <div className="d-flex align-items-center ms-2 flex-grow-1">
-                          <div style={{ width: '10px', height: '10px', backgroundColor: '#4CAF50', borderRadius: '50%', marginRight: '8px' }}></div>
-                          <input type="text" className="form-control form-control-sm" placeholder="Choose starting point"
-                            style={{ borderRadius: '30px', border: 'none', backgroundColor: '#f5f5f5', fontSize: '0.9rem' }} />
-                        </div>
-                      </div>
-
-                      <div className="d-flex align-items-center flex-grow-1">
-                        <span style={{ color: '#0a2540', fontWeight: '600', minWidth: '60px' }}></span>
-                        <div className="d-flex align-items-center ms-2 flex-grow-1">
-                          <div style={{ width: '10px', height: '10px', backgroundColor: '#FF4444', borderRadius: '50%', marginRight: '8px' }}></div>
-                          <input type="text" className="form-control form-control-sm" placeholder="Choose destination"
-                            style={{ borderRadius: '30px', border: 'none', backgroundColor: '#f5f5f5', fontSize: '0.9rem' }} />
-                        </div>
-                      </div>
-
-                      <button className="btn btn-sm" style={{
-                        backgroundColor: '#0a2540', color: 'white', borderRadius: '30px',
-                        padding: '8px 20px', border: 'none', fontSize: '0.85rem', whiteSpace: 'nowrap'
-                      }}>
-                        <i className="bi bi-arrow-right-circle me-1"></i>Go
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* MAPA */}
+              {/* MAPA CON ROUTE PLANNER INTEGRADO */}
               <div className="row">
-                <div className="col-12">
+                <div className="col-12" style={{ position: 'relative' }}>
                   <MapContainer center={santoDomingoCenter} zoom={12} 
                     style={{ height: '500px', width: '100%', borderRadius: '12px' }}>
+                    
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: '20px', 
+                      left: '20px', 
+                      zIndex: 1000, 
+                      width: '320px',
+                      maxWidth: '90%',
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                      padding: '0'
+                    }}>
+                      <RoutePlanner onRouteRequest={handleRouteRequest} />
+                    </div>
+                    
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' />
                     
-                    <Marker position={santoDomingoCenter}><Popup><b>Centro de Santo Domingo</b></Popup></Marker>
+                    <Marker position={santoDomingoCenter}>
+                      <Popup><b>Centro de Santo Domingo</b></Popup>
+                    </Marker>
                     
                     {lugaresInteres.map((lugar, index) => (
                       <Marker key={index} position={lugar.pos}>
@@ -209,14 +294,62 @@ function App() {
                     
                     {corredores.map((corredor, index) => (
                       <Polyline key={index} positions={corredor.puntos} color={corredor.color} weight={5} opacity={0.8}>
-                        <Popup><div className="text-center"><b>{corredor.nombre}</b><br /><small>Ruta de autobuses</small></div></Popup>
+                        <Popup>
+                          <div className="text-center">
+                            <b>{corredor.nombre}</b><br />
+                            <small>Ruta de autobuses</small>
+                          </div>
+                        </Popup>
                       </Polyline>
                     ))}
+
+                    {routePoints.start && routePoints.end && (
+                      <OSRMRoute
+                        key={`${routePoints.start[0]}-${routePoints.start[1]}-${routePoints.end[0]}-${routePoints.end[1]}`}
+                        startPoint={routePoints.start}
+                        endPoint={routePoints.end}
+                        onRouteFound={handleRouteFound}
+                      />
+                    )}
                   </MapContainer>
                 </div>
               </div>
 
-              {/* Leyenda */}
+              {/* INFO DE LA RUTA */}
+              {routeInfo && routeInfo.length > 0 && (
+                <div className="row mt-3">
+                  <div className="col-12">
+                    <div className="card border-0 shadow-sm">
+                      <div className="card-body">
+                        <h6 className="card-title" style={{ color: '#0a2540' }}>
+                          <i className="bi bi-info-circle me-2"></i>
+                          Información de la ruta
+                        </h6>
+                        <div className="row">
+                          {routeInfo.map((route, index) => (
+                            <div key={index} className="col-md-4 mb-2">
+                              <div className="p-2 rounded" style={{
+                                backgroundColor: index === 0 ? '#e8f4fd' : '#f8f9fa',
+                                borderLeft: `4px solid ${['#3388ff', '#ff5733', '#33ff57'][index]}`
+                              }}>
+                                <strong>Ruta {index + 1}</strong>
+                                <div className="small">
+                                  📏 {(route.summary.totalDistance / 1000).toFixed(2)} km
+                                </div>
+                                <div className="small">
+                                  ⏱️ {Math.round(route.summary.totalTime / 60)} minutos
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Leyenda de corredores */}
               <div className="row mt-3">
                 <div className="col-12">
                   <div className="d-flex gap-4 justify-content-center flex-wrap">
@@ -232,7 +365,7 @@ function App() {
             </div>
 
             {/* SERVICIOS DETALLADOS */}
-            <section className="services-section py-5" id="servicios" style={{ backgroundColor: '#f8f9fa' }}>
+            <section id="servicios" className="services-section py-5" style={{ backgroundColor: '#f8f9fa' }}>
               <div className="container">
                 <h2 className="text-center mb-5" style={{ color: '#0a2540', fontWeight: '700' }}>Nuestros Servicios</h2>
                 <div className="row">
@@ -276,7 +409,7 @@ function App() {
             </section>
 
             {/* SOBRE NOSOTROS */}
-            <section className="about-section py-5" id="nosotros">
+            <section id="nosotros" className="about-section py-5">
               <div className="container">
                 <div className="row align-items-center">
                   <div className="col-lg-6">
@@ -295,7 +428,7 @@ function App() {
                     </p>
                   </div>
                   <div className="col-lg-6">
-                    <img src="file:///C:/Users/white/Desktop/Semester%208/Weny%20108/Logo.png" alt="Sobre nosotros" className="img-fluid rounded-4 shadow"/>
+                    <img src="https://imgs.search.brave.com/yFt1_ft8vDPJmWBP3egJVO-mKKUsYJmSzhN5QeK0Xq8/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wMzIv/OTQ0LzU3OC9zbWFs/bC9uaWdodC10cmFu/c3BvcnRhdGlvbi1i/bHVycmVkLW1vdGlv/bi1tb2Rlcm4tY2l0/eS1saWZlLWZyZWUt/cGhvdG8uanBn" alt="Sobre nosotros" className="img-fluid rounded-4 shadow"/> 
                   </div>
                 </div>
               </div>
@@ -362,7 +495,7 @@ function App() {
             </section>
 
             {/* FOOTER */}
-            <footer className="footer" style={{ backgroundColor: '#0a2540', color: '#f5f5f5', padding: '60px 0 30px' }} id="contacto">
+            <footer id="contacto" className="footer" style={{ backgroundColor: '#0a2540', color: '#f5f5f5', padding: '60px 0 30px' }}>
               <div className="container">
                 <div className="row">
                   <div className="col-lg-4 mb-4">
@@ -410,11 +543,34 @@ function App() {
                 </div>
               </div>
             </footer>
+
+            {/* BOTÓN DE INSTALACIÓN */}
+            {showInstallButton && (
+              <button 
+                onClick={handleInstallClick}
+                style={{
+                  position: 'fixed',
+                  bottom: '20px',
+                  right: '20px',
+                  backgroundColor: '#0a2540',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '30px',
+                  padding: '12px 24px',
+                  zIndex: 1000,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                📱 Instalar App
+              </button>
+            )}
           </div>
         } />
         <Route path="/login" element={<Login />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 

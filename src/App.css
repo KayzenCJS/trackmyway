@@ -174,3 +174,55 @@ h1 {
     font-size: 1.8rem !important;
   }
 }
+
+/* Estilos para el planificador de rutas */
+.route-planner .form-control {
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  padding: 10px 15px;
+}
+
+.route-planner .form-control:focus {
+  box-shadow: 0 0 0 3px rgba(10, 37, 64, 0.1);
+  border-color: #0a2540;
+}
+
+.route-planner .btn-outline-primary {
+  color: #0a2540;
+  border-color: #0a2540;
+}
+
+.route-planner .btn-outline-primary:hover {
+  background-color: #0a2540;
+  color: white;
+}
+
+.route-planner .btn-primary {
+  background-color: #0a2540;
+  border-color: #0a2540;
+}
+
+/* Estilos para los marcadores personalizados */
+.custom-marker {
+  background: transparent;
+  border: none;
+}
+
+/* Animación para los markers */
+@keyframes markerPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.custom-marker div {
+  animation: markerPulse 1s ease infinite;
+}
+
+/* Estilos para las rutas en el mapa */
+.leaflet-routing-alternatives-container {
+  background: white;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}

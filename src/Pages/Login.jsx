@@ -1,11 +1,27 @@
 import React, { useState } from 'react';
+import { useUser } from '../context/UserContext';
 
 const Login = () => {
+    const { login } = useUser();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showRegisterAlert, setShowRegisterAlert] = useState(false);
+
+    // Detectar URL del backend automáticamente
+    const getApiUrl = () => {
+        const hostname = window.location.hostname;
+        
+        // Si estamos en localhost o 127.0.0.1
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return 'http://localhost/trackmyway-api';
+        }
+        
+        // Si es una IP (ej: 192.168.x.x) o un dominio
+        return `http://${hostname}/trackmyway-api`;
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -13,26 +29,23 @@ const Login = () => {
         setError('');
         setSuccess('');
 
-        try {
-            console.log('Enviando datos:', { email, password }); // Para depurar
+        const apiUrl = getApiUrl();
+        console.log('📤 Conectando a:', `${apiUrl}/login.php`);
 
-            const response = await fetch('http://localhost/trackmyway-api/login.php', {
+        try {
+            const response = await fetch(`${apiUrl}/login.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ 
-                    email: email, 
-                    password: password 
-                })
+                body: JSON.stringify({ email, password })
             });
 
             const data = await response.json();
-            console.log('Respuesta del servidor:', data); // Para depurar
 
             if (data.success) {
+                login(data.user);
                 setSuccess('¡Login exitoso! Redirigiendo...');
-                localStorage.setItem('user', JSON.stringify(data.user));
                 setTimeout(() => {
                     window.location.href = '/';
                 }, 1000);
@@ -40,11 +53,29 @@ const Login = () => {
                 setError(data.message || 'Error al iniciar sesión');
             }
         } catch (err) {
-            console.error('Error completo:', err);
-            setError('Error de conexión con el servidor');
+            console.error('Error:', err);
+            setError(`Error de conexión: ${err.message}`);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleRegisterClick = (e) => {
+        e.preventDefault();
+        setShowRegisterAlert(true);
+        setTimeout(() => setShowRegisterAlert(false), 3000);
+    };
+
+    const handleGuestClick = () => {
+        const guestUser = {
+            id: 'guest_' + Date.now(),
+            nombre: 'Visitante',
+            email: `guest_${Date.now()}@trackmyway.com`,
+            isGuest: true
+        };
+        login(guestUser);
+        localStorage.setItem('isGuest', 'true');
+        window.location.href = '/';
     };
 
     return (
@@ -73,6 +104,13 @@ const Login = () => {
                                 </div>
                             )}
 
+                            {showRegisterAlert && (
+                                <div className="alert alert-info" role="alert">
+                                    <i className="bi bi-info-circle me-2"></i>
+                                    🚧 Registro en construcción - Pronto disponible
+                                </div>
+                            )}
+
                             <form onSubmit={handleSubmit}>
                                 <div className="mb-3">
                                     <label className="form-label fw-medium">Email</label>
@@ -81,7 +119,7 @@ const Login = () => {
                                         className="form-control form-control-lg bg-light border-0"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="ejemplo@correo.com"
+                                        placeholder="test@email.com"
                                         required
                                     />
                                 </div>
@@ -93,7 +131,7 @@ const Login = () => {
                                         className="form-control form-control-lg bg-light border-0"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="••••••••"
+                                        placeholder="123456"
                                         required
                                     />
                                 </div>
@@ -121,8 +159,25 @@ const Login = () => {
                                     )}
                                 </button>
 
-                                <div className="text-center">
-                                    <a href="/register" className="text-decoration-none" style={{ color: '#0a2540' }}>
+                                {/* Botón continuar como invitado */}
+                                <div className="text-center mt-2">
+                                    <button 
+                                        type="button"
+                                        className="btn btn-link text-decoration-none"
+                                        style={{ color: '#0a2540' }}
+                                        onClick={handleGuestClick}
+                                    >
+                                        🚪 Continuar como invitado
+                                    </button>
+                                </div>
+
+                                <div className="text-center mt-3">
+                                    <a 
+                                        href="#" 
+                                        className="text-decoration-none" 
+                                        style={{ color: '#0a2540' }}
+                                        onClick={handleRegisterClick}
+                                    >
                                         ¿No tienes cuenta? Regístrate
                                     </a>
                                 </div>
@@ -134,7 +189,5 @@ const Login = () => {
         </div>
     );
 };
-
-
 
 export default Login;
